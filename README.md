@@ -1,6 +1,4 @@
 # kondo-ics-servo-web-tester
-use webpage to test kondo ics servo
-
 
 use ics v3 library as base code to control kondo ics servo
 
@@ -10,4 +8,5 @@ it can change servo id and test speed and angle.
 
 i only test on KRS-3204 servo
 
+use ttl module to connect ics servo
 
