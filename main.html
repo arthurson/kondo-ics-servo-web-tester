@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>近藤科學 KONDO ICS 舵機測試</title>
+    <title>近藤科學 KONDO ICS 單向模式 · 1.25M 固定</title>
     <style>
         * {
             box-sizing: border-box;
@@ -19,7 +19,7 @@
             margin: 0;
         }
         .card {
-            max-width: 950px;
+            max-width: 1000px;
             width: 100%;
             background: #f0f5fc;
             border-radius: 40px;
@@ -167,7 +167,7 @@
             padding: 18px 24px;
             font-family: 'JetBrains Mono', 'Fira Code', monospace;
             font-size: 0.8rem;
-            height: 170px;
+            height: 200px;
             overflow-y: auto;
             border: 1px solid #2e5677;
             line-height: 1.6;
@@ -190,128 +190,91 @@
             border: 1px solid #b9d1e9;
             margin: 24px 0;
         }
-        .value-badge {
-            background: #d9e5f0;
+        .warning-box {
+            background: #fff3cd;
+            border: 1px solid #ffe69c;
+            border-radius: 20px;
+            padding: 16px 22px;
+            color: #856404;
+            margin-bottom: 20px;
+        }
+        .baud-info {
+            background: #e3effa;
             border-radius: 30px;
-            padding: 6px 16px;
-            font-family: monospace;
-            font-weight: 600;
+            padding: 8px 20px;
+            font-weight: bold;
+            color: #003a70;
+        }
+        .angle-limit {
+            color: #d14939;
+            font-weight: bold;
+            margin-left: 10px;
         }
     </style>
 </head>
 <body>
 <div class="card">
     <h1>
-        🦾 近藤科學 KONDO ICS 伺服
-        <span class="badge">廣播改ID · 參數讀寫</span>
+        🦾 近藤科學 KONDO ICS 單向模式
+        <span class="badge">1.25M 固定 · 演示後回中</span>
     </h1>
 
-    <!-- 連接條：無下拉，直接彈窗 -->
     <div class="connector-bar">
         <span id="connStatus"><span class="led"></span> 未連接</span>
-        <div style="display: flex; gap: 10px;">
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <span class="baud-info">⚡ 1.25Mbps (固定)</span>
             <button class="btn btn-primary" id="connectBtn">🔌 連接串口</button>
             <button class="btn" id="disconnectBtn" disabled>🔇 斷開</button>
         </div>
     </div>
 
-    <!-- 廣播改ID區塊 (使用ICS setID 0xFF 命令) -->
+    <!-- 警告：無 RX -->
+    <div class="warning-box">
+        <strong>⚠️ 你目前只連接咗 TX，無連接 RX</strong><br>
+        - 所有指令只會發送，唔會等待回應<br>
+        - 鮑率固定為 **1.25Mbps (1250000)**<br>
+        - 演示完結後會自動 **回中 (0°)**
+    </div>
+
+    <!-- 廣播改ID -->
     <div class="section">
-        <div class="section-title">📡 廣播模式 · 修改伺服ID (0xFF + ID)</div>
+        <div class="section-title">📡 廣播模式 · 修改伺服ID</div>
         <div class="param-row">
             <label>新ID (0~31)</label>
             <input type="number" id="newServoId" min="0" max="31" value="1" step="1">
-            <span class="mono-tip">0~31 (0x00~0x1F)</span>
         </div>
         <div class="button-group">
-            <button class="btn btn-danger" id="broadcastChangeIdBtn">📢 廣播修改ID (setID 命令)</button>
-            <button class="btn" id="broadcastGetIdBtn">📡 廣播讀取ID (getID 命令)</button>
+            <button class="btn btn-danger" id="broadcastChangeIdBtn">📢 廣播修改ID</button>
         </div>
-        <div style="font-size:0.9rem; background:#e1effb; border-radius:40px; padding:12px 20px; margin-top:15px;">
-            💡 使用ICS協定：<code>0xFF 0x00 0x00 0x00</code> 讀ID；<code>0xE0+ID 0x01 0x01 0x01</code> 寫ID。<br>
-            必須<strong>單獨連接</strong>一顆舵機，廣播會影響所有舵機。
+        <div style="margin-top:10px; color:#d14939;">
+            ⚠️ 改完ID後要斷電重開舵機先生效
         </div>
     </div>
 
-    <!-- 普通模式：目標ID輸入 + 角度控制 + 參數讀寫 -->
+    <!-- 指定ID控制 -->
     <div class="section">
-        <div class="section-title">🎯 普通模式 · 指定ID控制</div>
+        <div class="section-title">🎯 指定ID控制 (單向)</div>
         <div class="param-row">
             <label>目標ID</label>
             <input type="number" id="targetId" min="0" max="31" value="1" step="1">
-            <span class="mono-tip">0~31</span>
-        </div>
-        <div class="flex-row" style="gap:8px; margin-bottom:12px;">
-            <span class="value-badge" id="currentPosDisplay">角度: ---</span>
-            <span class="value-badge" id="currentStrcDisplay">拉伸: ---</span>
-            <span class="value-badge" id="currentSpdDisplay">速度: ---</span>
         </div>
 
-        <!-- 角度控制 -->
         <div class="param-row">
             <label>角度(°)</label>
-            <input type="number" id="angleDeg" value="0" min="-180" max="180" step="1">
-            <span>°</span>
+            <input type="number" id="angleDeg" value="0" min="-135" max="135" step="1">
+            <span>° <span class="angle-limit">(-135 至 +135)</span></span>
         </div>
-        <div class="param-row">
-            <label>運動時間(ms)</label>
-            <input type="number" id="moveTime" value="1000" min="100" max="10000" step="50">
-        </div>
+        
         <div class="button-group">
-            <button class="btn btn-primary" id="moveDegBtn">📐 角度→轉動 (deg→pos)</button>
-            <button class="btn btn-success" id="setFreeBtn">💤 脫力 (setFree)</button>
-            <button class="btn" id="getPosBtn">📏 讀取目前位置 (getPos)</button>
-        </div>
-
-        <!-- 參數讀寫 (拉伸/速度/電流/溫度) -->
-        <hr>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px,1fr)); gap: 15px;">
-            <div>
-                <div class="param-row">
-                    <label>拉伸 1~127</label>
-                    <input type="number" id="strcVal" min="1" max="127" value="40">
-                </div>
-                <div class="button-group">
-                    <button class="btn btn-warning" id="setStrcBtn">✏️ 寫拉伸</button>
-                    <button class="btn" id="getStrcBtn">🔍 讀拉伸</button>
-                </div>
-            </div>
-            <div>
-                <div class="param-row">
-                    <label>速度 1~127</label>
-                    <input type="number" id="spdVal" min="1" max="127" value="40">
-                </div>
-                <div class="button-group">
-                    <button class="btn btn-warning" id="setSpdBtn">✏️ 寫速度</button>
-                    <button class="btn" id="getSpdBtn">🔍 讀速度</button>
-                </div>
-            </div>
-            <div>
-                <div class="param-row">
-                    <label>電流限制 1~63</label>
-                    <input type="number" id="curVal" min="1" max="63" value="32">
-                </div>
-                <div class="button-group">
-                    <button class="btn btn-warning" id="setCurBtn">✏️ 寫電流</button>
-                    <button class="btn" id="getCurBtn">🔍 讀電流</button>
-                </div>
-            </div>
-            <div>
-                <div class="param-row">
-                    <label>溫度限制 1~127</label>
-                    <input type="number" id="tmpVal" min="1" max="127" value="60">
-                </div>
-                <div class="button-group">
-                    <button class="btn btn-warning" id="setTmpBtn">✏️ 寫溫度</button>
-                    <button class="btn" id="getTmpBtn">🔍 讀溫度</button>
-                </div>
-            </div>
+            <button class="btn btn-primary" id="moveDegBtn">📐 發送角度指令</button>
+            <button class="btn btn-success" id="setFreeBtn">💤 發送脫力指令</button>
+            <button class="btn" id="goHomeBtn">🏠 回中 (0°)</button>
         </div>
     </div>
 
-    <!-- 簡易演示：多角度序列 + 快慢選擇 -->
+    <!-- 簡易演示區 -->
     <div class="section">
-        <div class="section-title">📽️ 簡易演示 · 多角度序列</div>
+        <div class="section-title">📽️ 簡易演示 · ±10° / ±45°</div>
         <div class="flex-row">
             <div class="param-row" style="flex:2;">
                 <label>演示速度</label>
@@ -328,9 +291,9 @@
             </div>
         </div>
         <div class="button-group">
-            <button class="btn btn-success" id="demoWaveBtn">🌊 波浪 (0°→90°→180°→90°)</button>
-            <button class="btn btn-primary" id="demoSwingerBtn">🎭 搖擺 (45°⇄135°)</button>
-            <button class="btn btn-warning" id="demoStepBtn">📶 步進 (0° 60° 120° 180°)</button>
+            <button class="btn btn-success" id="demoSmallBtn">🔹 小幅度 (±10°)</button>
+            <button class="btn btn-primary" id="demoMediumBtn">🔸 中幅度 (±45°)</button>
+            <button class="btn btn-warning" id="demoComboBtn">🔶 組合 (+10° +45° -10° -45°)</button>
             <button class="btn" id="stopDemoBtn">⏹️ 停止(脫力)</button>
         </div>
         <div style="margin-top:12px; background:#e3effa; border-radius:30px; padding:6px 20px;">
@@ -339,116 +302,114 @@
     </div>
 
     <!-- 日誌 -->
-    <div class="log-panel" id="logPanel">
-        [系統] 就緒 — 近藤KONDO ICS 3.5/3.6 協定 (8E1, 115200bps)<br>
-    </div>
+    <div class="log-panel" id="logPanel">[系統] 單向模式 - 1.25M 固定 · 演示後回中<br></div>
     <div style="display: flex; justify-content: space-between; margin-top: 12px;">
-        <span class="mono-tip">🔹 命令格式：CMD + 數據，位元7固定1，參數0~127</span>
+        <span class="mono-tip">🔹 所有指令只發送，唔等回應 · 演示完自動回中</span>
         <button class="btn" id="clearLogBtn">🧹 清空日誌</button>
     </div>
 </div>
 
 <script>
-    // ---------- 日誌 ----------
+    // ---------- DOM ----------
     const logPanel = document.getElementById('logPanel');
-    function addLog(msg, isTx = false, isRx = false) {
-        const prefix = isTx ? '🔵 TX' : (isRx ? '🟢 RX' : '⚪');
+    const connStatus = document.getElementById('connStatus');
+    const connectBtn = document.getElementById('connectBtn');
+    const disconnectBtn = document.getElementById('disconnectBtn');
+    const targetIdInput = document.getElementById('targetId');
+    const newServoId = document.getElementById('newServoId');
+    const angleDeg = document.getElementById('angleDeg');
+    const demoSpeedSelect = document.getElementById('demoSpdSelect');
+    const demoRepeat = document.getElementById('demoRepeat');
+    const speedDisplay = document.getElementById('speedDisplay');
+    const demoIdDisplay = document.getElementById('demoIdDisplay');
+
+    // 常數
+    const MIN_ANGLE = -135;
+    const MAX_ANGLE = 135;
+    const HOME_ANGLE = 0;  // 回中位置
+    
+    // 更新速度顯示
+    demoSpeedSelect.addEventListener('change', (e) => speedDisplay.innerText = e.target.value);
+    speedDisplay.innerText = demoSpeedSelect.value;
+
+    targetIdInput.addEventListener('change', () => demoIdDisplay.innerText = targetIdInput.value);
+    demoIdDisplay.innerText = targetIdInput.value;
+
+    // 角度輸入限制
+    angleDeg.addEventListener('change', function() {
+        let val = parseInt(this.value);
+        if (val < MIN_ANGLE) this.value = MIN_ANGLE;
+        if (val > MAX_ANGLE) this.value = MAX_ANGLE;
+    });
+
+    // ---------- 日誌 ----------
+    function addLog(msg, isTx = false) {
+        const prefix = isTx ? '🔵 TX' : '⚪';
         const line = document.createElement('div');
         line.textContent = `[${new Date().toLocaleTimeString()}] ${prefix} ${msg}`;
         logPanel.appendChild(line);
         logPanel.scrollTop = logPanel.scrollHeight;
     }
-    document.getElementById('clearLogBtn').addEventListener('click', ()=>{
+
+    document.getElementById('clearLogBtn').addEventListener('click', () => {
         logPanel.innerHTML = '[系統] 日誌已清除<br>';
     });
 
-    // 速度顯示
-    const demoSpeedSelect = document.getElementById('demoSpdSelect');
-    const speedDisplay = document.getElementById('speedDisplay');
-    demoSpeedSelect.addEventListener('change', (e) => speedDisplay.innerText = e.target.value);
-    speedDisplay.innerText = demoSpeedSelect.value;
-
-    const targetIdInput = document.getElementById('targetId');
-    const demoIdDisplay = document.getElementById('demoIdDisplay');
-    targetIdInput.addEventListener('change', () => demoIdDisplay.innerText = targetIdInput.value);
-    demoIdDisplay.innerText = targetIdInput.value;
-
-    // ---------- 串口 (WebSerial) ----------
+    // ---------- 串口 ----------
     let port = null;
-    let reader = null;
     let writer = null;
     let serialActive = false;
-    let readLoopActive = false;
-
-    const connectBtn = document.getElementById('connectBtn');
-    const disconnectBtn = document.getElementById('disconnectBtn');
-    const connStatus = document.getElementById('connStatus');
+    const FIXED_BAUD = 1250000;  // 固定 1.25M
 
     async function connectSerial() {
-        if (serialActive) return;
         try {
             port = await navigator.serial.requestPort();
-            await port.open({ baudRate: 115200, dataBits: 8, stopBits: 1, parity: 'even' }); // 8E1
-
+            
+            await port.open({ 
+                baudRate: FIXED_BAUD, 
+                dataBits: 8, 
+                stopBits: 1, 
+                parity: 'even' 
+            });
+            
             writer = port.writable.getWriter();
-            reader = port.readable.getReader();
-
             serialActive = true;
-            readLoopActive = true;
             connectBtn.disabled = true;
             disconnectBtn.disabled = false;
-            connStatus.innerHTML = '<span class="led green"></span> 已連接 115200 8E1';
-
-            addLog('✅ 串口已連接 (Kondo ICS 115200 8E1)');
-
-            readLoop();
+            connStatus.innerHTML = `<span class="led green"></span> 已連接 ${FIXED_BAUD} 8E1 (單向)`;
+            addLog(`✅ 串口已連接 (鮑率 ${FIXED_BAUD}) - 演示後自動回中`);
         } catch (e) {
             addLog('❌ 連接失敗: ' + e.message);
         }
     }
 
     async function disconnectSerial() {
-        if (!serialActive) return;
-        readLoopActive = false;
+        if (writer) {
+            await writer.close();
+            writer = null;
+        }
+        if (port) {
+            await port.close();
+            port = null;
+        }
         serialActive = false;
-        try {
-            if (reader) await reader.cancel();
-            if (writer) await writer.close();
-            if (port) await port.close();
-        } catch (e) {
-            addLog('斷開異常: ' + e.message);
-        } finally {
-            reader = null; writer = null; port = null;
-            connectBtn.disabled = false;
-            disconnectBtn.disabled = true;
-            connStatus.innerHTML = '<span class="led"></span> 未連接';
-            addLog('串口已斷開');
-        }
+        connectBtn.disabled = false;
+        disconnectBtn.disabled = true;
+        connStatus.innerHTML = '<span class="led"></span> 未連接';
+        addLog('串口已斷開');
     }
 
-    async function readLoop() {
-        while (serialActive && reader && readLoopActive) {
-            try {
-                const { value, done } = await reader.read();
-                if (done) break;
-                if (value && value.length) {
-                    const hex = Array.from(value).map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
-                    addLog(`接收 ${value.length}B: ${hex}`, false, true);
-                }
-            } catch (e) {
-                if (serialActive) addLog('讀錯誤: ' + e.message);
-                break;
-            }
-        }
-    }
+    connectBtn.addEventListener('click', connectSerial);
+    disconnectBtn.addEventListener('click', disconnectSerial);
 
-    async function sendRaw(data) {
+    // ---------- 只發送，唔等回應 ----------
+    async function sendOnly(data) {
         if (!serialActive || !writer) {
             addLog('⛔ 串口未連接');
             return false;
         }
         const hex = Array.from(data).map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
-        addLog(`發送 ${data.length}B: ${hex}`, true, false);
+        addLog(`發送 ${data.length}B: ${hex}`, true);
         try {
             await writer.write(data);
             return true;
@@ -458,188 +419,113 @@
         }
     }
 
-    // ---------- ICS 命令構建 ----------
-    function buildSetPosCmd(id, pos) {
-        // 0x80 + id, pos高7位, pos低7位
-        return new Uint8Array([0x80 + id, (pos >> 7) & 0x7F, pos & 0x7F]);
-    }
-    function buildSetFreeCmd(id) {
-        return new Uint8Array([0x80 + id, 0, 0]);
-    }
-    function buildParamWriteCmd(id, sc, val) {
-        // 0xC0 + id, sc (1~4), val
-        return new Uint8Array([0xC0 + id, sc, val & 0x7F]);
-    }
-    function buildParamReadCmd(id, sc) {
-        // 0xA0 + id, sc
-        return new Uint8Array([0xA0 + id, sc]);
-    }
-    function buildGetPosCmd(id) {
-        return new Uint8Array([0xA0 + id, 0x05]);
-    }
-    function buildGetIDCmd() {
-        return new Uint8Array([0xFF, 0x00, 0x00, 0x00]);
-    }
-    function buildSetIDCmd(newId) {
-        return new Uint8Array([0xE0 + newId, 0x01, 0x01, 0x01]);
-    }
-
-    // 角度轉 pos
+    // ---------- 指令構建 ----------
     function degToPos(deg) {
-        // pos = deg * 29.633 + 7500
+        // 限制角度範圍
+        if (deg < MIN_ANGLE) deg = MIN_ANGLE;
+        if (deg > MAX_ANGLE) deg = MAX_ANGLE;
+        
+        // 公式：pos = deg * 29.633 + 7500
         return Math.round(deg * 29.633 + 7500);
     }
 
-    // 更新顯示UI (簡易解析回包)
-    function parseAndDisplay(rxData, expectedLen) {
-        if (!rxData || rxData.length < expectedLen) return;
-        if (expectedLen === 3 && rxData.length >= 3) {
-            let pos = ((rxData[1] << 7) & 0x3F80) + (rxData[2] & 0x7F);
-            document.getElementById('currentPosDisplay').innerText = `角度: ${pos}`;
-        }
-        if (expectedLen === 3 && rxData[1] === 0x01) { } // 拉伸
+    // 回中功能
+    async function goHome() {
+        const id = parseInt(targetIdInput.value);
+        const pos = degToPos(HOME_ANGLE);
+        const cmd = new Uint8Array([0x80 + id, (pos >> 7) & 0x7F, pos & 0x7F]);
+        await sendOnly(cmd);
+        addLog(`🏠 自動回中: ID=${id} 到 0° (pos=${pos})`);
     }
 
-    // 通用同步收發 (發送後等待固定長度應答)
-    async function syncTransaction(txData, rxLen) {
-        await sendRaw(txData);
-        // 等待一段時間讓舵機應答
-        await new Promise(r => setTimeout(r, 50));
-        // 這裡無法直接讀取，因為讀循環是異步的；我們在日誌中觀察即可。
-        return true;
-    }
-
-    // ---------- 事件綁定 ----------
     // 廣播改ID
-    document.getElementById('broadcastChangeIdBtn').addEventListener('click', async ()=>{
-        const newId = parseInt(document.getElementById('newServoId').value);
-        if (newId<0 || newId>31) return;
-        const cmd = buildSetIDCmd(newId);
-        await syncTransaction(cmd, 1); // 預期應答1字節
-        addLog(`📢 廣播修改ID -> ${newId} (發送後等待520ms)`);
-        await new Promise(r => setTimeout(r, 520));
-    });
-    document.getElementById('broadcastGetIdBtn').addEventListener('click', async ()=>{
-        const cmd = buildGetIDCmd();
-        await syncTransaction(cmd, 1);
-        addLog('📡 廣播讀取ID命令已發送 (查看日誌中0x1F遮罩後資料)');
+    document.getElementById('broadcastChangeIdBtn').addEventListener('click', async () => {
+        const id = parseInt(newServoId.value);
+        if (id < 0 || id > 31) return;
+        const cmd = new Uint8Array([0xE0 + id, 0x01, 0x01, 0x01]);
+        await sendOnly(cmd);
+        addLog(`📢 廣播改ID指令已發送 -> ${id}`);
+        addLog('⚠️ 記住要斷電重開舵機');
     });
 
-    // 普通功能
-    document.getElementById('moveDegBtn').addEventListener('click', async ()=>{
+    // 移動角度
+    document.getElementById('moveDegBtn').addEventListener('click', async () => {
         const id = parseInt(targetIdInput.value);
-        const deg = parseFloat(document.getElementById('angleDeg').value);
+        let deg = parseFloat(angleDeg.value);
+        
+        // 確保角度喺範圍內
+        deg = Math.min(MAX_ANGLE, Math.max(MIN_ANGLE, deg));
+        
         let pos = degToPos(deg);
-        if (pos < 3500) pos = 3500;
-        if (pos > 11500) pos = 11500;
-        const cmd = buildSetPosCmd(id, pos);
-        await syncTransaction(cmd, 3);
-        addLog(`📐 ID=${id} 轉到 ${deg}° (pos=${pos})`);
-    });
-    document.getElementById('setFreeBtn').addEventListener('click', async ()=>{
-        const id = parseInt(targetIdInput.value);
-        const cmd = buildSetFreeCmd(id);
-        await syncTransaction(cmd, 3);
-        addLog(`💤 ID=${id} 脫力`);
-    });
-    document.getElementById('getPosBtn').addEventListener('click', async ()=>{
-        const id = parseInt(targetIdInput.value);
-        const cmd = buildGetPosCmd(id);
-        await syncTransaction(cmd, 4); // getPos 應答4字節 (0xA0+ID, 0x05, posH, posL)
-        addLog(`📏 讀取ID=${id} 位置 (應答4字節)`);
+        // 確保位置喺安全範圍 (3500-11500)
+        pos = Math.min(11500, Math.max(3500, pos));
+        
+        const cmd = new Uint8Array([0x80 + id, (pos >> 7) & 0x7F, pos & 0x7F]);
+        await sendOnly(cmd);
+        addLog(`📐 已發送角度指令: ID=${id} 到 ${deg}° (pos=${pos})`);
     });
 
-    // 參數寫讀
-    document.getElementById('setStrcBtn').addEventListener('click', async ()=>{
+    // 脫力
+    document.getElementById('setFreeBtn').addEventListener('click', async () => {
         const id = parseInt(targetIdInput.value);
-        const val = parseInt(document.getElementById('strcVal').value);
-        const cmd = buildParamWriteCmd(id, 1, val);
-        await syncTransaction(cmd, 3);
-        addLog(`✏️ 寫拉伸 ID=${id} = ${val}`);
-    });
-    document.getElementById('getStrcBtn').addEventListener('click', async ()=>{
-        const id = parseInt(targetIdInput.value);
-        const cmd = buildParamReadCmd(id, 1);
-        await syncTransaction(cmd, 3);
-    });
-    document.getElementById('setSpdBtn').addEventListener('click', async ()=>{
-        const id = parseInt(targetIdInput.value);
-        const val = parseInt(document.getElementById('spdVal').value);
-        const cmd = buildParamWriteCmd(id, 2, val);
-        await syncTransaction(cmd, 3);
-        addLog(`✏️ 寫速度 ID=${id} = ${val}`);
-    });
-    document.getElementById('getSpdBtn').addEventListener('click', async ()=>{
-        const id = parseInt(targetIdInput.value);
-        const cmd = buildParamReadCmd(id, 2);
-        await syncTransaction(cmd, 3);
-    });
-    document.getElementById('setCurBtn').addEventListener('click', async ()=>{
-        const id = parseInt(targetIdInput.value);
-        const val = parseInt(document.getElementById('curVal').value);
-        const cmd = buildParamWriteCmd(id, 3, val);
-        await syncTransaction(cmd, 3);
-        addLog(`✏️ 寫電流限制 ID=${id} = ${val}`);
-    });
-    document.getElementById('getCurBtn').addEventListener('click', async ()=>{
-        const id = parseInt(targetIdInput.value);
-        const cmd = buildParamReadCmd(id, 3);
-        await syncTransaction(cmd, 3);
-    });
-    document.getElementById('setTmpBtn').addEventListener('click', async ()=>{
-        const id = parseInt(targetIdInput.value);
-        const val = parseInt(document.getElementById('tmpVal').value);
-        const cmd = buildParamWriteCmd(id, 4, val);
-        await syncTransaction(cmd, 3);
-        addLog(`✏️ 寫溫度限制 ID=${id} = ${val}`);
-    });
-    document.getElementById('getTmpBtn').addEventListener('click', async ()=>{
-        const id = parseInt(targetIdInput.value);
-        const cmd = buildParamReadCmd(id, 4);
-        await syncTransaction(cmd, 3);
+        const cmd = new Uint8Array([0x80 + id, 0, 0]);
+        await sendOnly(cmd);
+        addLog(`💤 已發送脫力指令: ID=${id}`);
     });
 
-    // 演示序列
-    async function runSequence(angles, repeat) {
+    // 回中按鈕
+    document.getElementById('goHomeBtn').addEventListener('click', goHome);
+
+    // ---------- 演示功能 ----------
+    async function runSequence(angles) {
         const id = parseInt(targetIdInput.value);
-        const speedMs = parseInt(demoSpeedSelect.value);
-        for (let r=0; r<repeat; r++) {
+        const speed = parseInt(demoSpeedSelect.value);
+        const repeat = parseInt(demoRepeat.value) || 1;
+        
+        addLog(`🎬 開始演示，重複 ${repeat} 次，間隔 ${speed}ms`);
+        
+        for (let r = 0; r < repeat; r++) {
             for (let deg of angles) {
+                // 確保角度喺範圍內
+                deg = Math.min(MAX_ANGLE, Math.max(MIN_ANGLE, deg));
+                
                 let pos = degToPos(deg);
-                if (pos<3500) pos=3500;
-                if (pos>11500) pos=11500;
-                const cmd = buildSetPosCmd(id, pos);
-                await sendRaw(cmd);
-                await new Promise(res => setTimeout(res, speedMs + 30));
+                pos = Math.min(11500, Math.max(3500, pos));
+                
+                const cmd = new Uint8Array([0x80 + id, (pos >> 7) & 0x7F, pos & 0x7F]);
+                await sendOnly(cmd);
+                addLog(`   ➜ ${deg}° (pos=${pos})`);
+                await new Promise(res => setTimeout(res, speed));
             }
         }
+        
+        // 演示完結後自動回中
+        addLog('🏁 演示完成，準備回中...');
+        await new Promise(res => setTimeout(res, 500)); // 等待半秒
+        await goHome();
     }
-    document.getElementById('demoWaveBtn').addEventListener('click', async ()=>{
-        const rep = parseInt(document.getElementById('demoRepeat').value) || 1;
-        addLog(`🌊 波浪序列 ID=${targetIdInput.value} 開始`);
-        await runSequence([0, 90, 180, 90], rep);
-        addLog('🏁 波浪完成');
-    });
-    document.getElementById('demoSwingerBtn').addEventListener('click', async ()=>{
-        const rep = parseInt(document.getElementById('demoRepeat').value) || 1;
-        addLog(`🎭 搖擺序列 ID=${targetIdInput.value}`);
-        await runSequence([45, 135, 45], rep);
-    });
-    document.getElementById('demoStepBtn').addEventListener('click', async ()=>{
-        const rep = parseInt(document.getElementById('demoRepeat').value) || 1;
-        addLog(`📶 步進序列 ID=${targetIdInput.value}`);
-        await runSequence([0, 60, 120, 180], rep);
-    });
-    document.getElementById('stopDemoBtn').addEventListener('click', async ()=>{
-        const id = parseInt(targetIdInput.value);
-        const cmd = buildSetFreeCmd(id);
-        await syncTransaction(cmd, 3);
-        addLog('⏹️ 停止(脫力)');
+
+    // 小幅度：±10°
+    document.getElementById('demoSmallBtn').addEventListener('click', () => {
+        runSequence([-10, 10, -10]);
     });
 
-    connectBtn.addEventListener('click', connectSerial);
-    disconnectBtn.addEventListener('click', disconnectSerial);
-    window.addEventListener('beforeunload', ()=>{ if (serialActive) disconnectSerial(); });
+    // 中幅度：±45°
+    document.getElementById('demoMediumBtn').addEventListener('click', () => {
+        runSequence([-45, 45, -45]);
+    });
+
+    // 組合：+10° +45° -10° -45°
+    document.getElementById('demoComboBtn').addEventListener('click', () => {
+        runSequence([10, 45, -10, -45]);
+    });
+
+    document.getElementById('stopDemoBtn').addEventListener('click', async () => {
+        const id = parseInt(targetIdInput.value);
+        const cmd = new Uint8Array([0x80 + id, 0, 0]);
+        await sendOnly(cmd);
+        addLog('⏹️ 已發送停止(脫力)指令');
+    });
 </script>
 </body>
 </html>
