@@ -1,5 +1,6 @@
 # kondo-ics-servo-web-tester
 
+![Screenshot_20260315_205527](https://github.com/user-attachments/assets/8e4ebff4-fa98-4731-8561-acf7ec4d1aa3)
 
 
 use ics v3 library as base code to control kondo ics servo
@@ -13,6 +14,9 @@ only test on KRS-3204 servo
 use ttl module to connect ics servo
 
 wire like what i did
+
+
+![IMG_20260315_202048](https://github.com/user-attachments/assets/2e593ae5-6172-45b5-bab0-a5bdb5f74e8e)
 
 
 https://youtu.be/aimQBZ0YNjY?si=zVHtqWAZQX2jhKkM
